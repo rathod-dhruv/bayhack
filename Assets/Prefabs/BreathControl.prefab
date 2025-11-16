@@ -892,8 +892,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 3785779853942741365}
   - {fileID: 1366121964694045479}
@@ -965,8 +965,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9a4235d395c04b6bb8896bb6478853c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  headsetCamera: {fileID: 0}
-  distanceInFront: 1.5
-  localOffset: {x: 0, y: 0, z: 0}
-  faceCamera: 1
-  matchCameraYaw: 0
+  playerCamera: {fileID: 0}
