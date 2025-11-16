@@ -2,11 +2,12 @@ using UnityEngine;
 using Meta.WitAi.TTS.Utilities;
 using System;
 
-public class SceneManager : MonoBehaviour
+public class SceneManagerCustom : MonoBehaviour
 {
-    public String stressLevel;
+    public static int stressLevel;
     [SerializeField] private TTSSpeaker ttsSpeaker;
-
+    [SerializeField] private TTSSpeaker ttsSpeakerCustom;
+    [SerializeField] private TTSAudioHandler ttsAudioHandler;
     [SerializeField] private AudioSource ttsAudioSource;
 
     [SerializeField] private float spawnDistance = 1f;
@@ -18,10 +19,21 @@ public class SceneManager : MonoBehaviour
     [SerializeField] private Transform xrRigRoot;
 
     [Header("Path Marker")]
-    [Tooltip("Path object already placed in the scene (initially disabled). Must have a PathTrigger + Collider (Is Trigger).")]
-    [SerializeField] private GameObject pathMarker;
+    
+    public static bool triggeredPath = false;
+    public BreathMovement breathingAnimation;
+    public GameObject[] halo;
+    public string[] customMsges;
 
 
+    public int msgIdx = 0;
+
+    public int idxTile = 0;
+    public int idxCount = 1;
+    public int tileEncounterd = 0;
+    
+    public NavMeshPathSpawner _meshPathSpawner;
+    public Collider collider;
     private void Awake()
     {
         // Fallback auto-wiring
@@ -30,7 +42,7 @@ public class SceneManager : MonoBehaviour
 
         if (!ttsAudioSource && ttsSpeaker)
             ttsAudioSource = ttsSpeaker.GetComponentInChildren<AudioSource>();
-
+        
         ttsSpeaker.Events.OnLoadBegin.AddListener((speaker, s) => Debug.Log($"OnLoadBegin: {s}"));
         ttsSpeaker.Events.OnLoadSuccess.AddListener((speaker, s) => Debug.Log($"OnLoadSuccess: {s}"));
         ttsSpeaker.Events.OnPlaybackStart.AddListener((speaker, s) => Debug.Log($"OnPlaybackStart: {s}"));
@@ -39,19 +51,29 @@ public class SceneManager : MonoBehaviour
             Debug.Log($"OnPlaybackComplete: {s}");
             HandleTTSDone();
         });
-
-        var trigger = pathMarker.GetComponent<PathTrigger>();
-        trigger.xrRig = xrRigRoot;
-        trigger.OnPlayerEntered += HandlePathEntered;
+        ttsSpeakerCustom.Events.OnPlaybackComplete.AddListener((speaker, s) =>
+        {
+            Debug.Log($"OnPlaybackComplete For Custom: {s}");
+            HandleTTSDoneForCustom();
+        });
+        
+        
     }
+    
+    
+    
 
     private void Start()
     {
-        var voiceInput = "Hi, I'm here to help you move more safely around your home. We're just going to stand together for a moment. No need to do anything yet.";
-        SpeakWithTTS(voiceInput, 1.0f, 1.0f);
+        Invoke("StartAudio", 1);
     }
 
-    private void SpeakWithTTS(string text, float volume, float pitch)
+    public void StartAudio()
+    {
+        HandleCustomSpeak();
+    }
+    
+    private void SpeakWithTTS_Custom(string text, float volume, float pitch)
     {
         if (ttsAudioSource != null)
         {
@@ -62,53 +84,122 @@ public class SceneManager : MonoBehaviour
         Debug.Log($"[TTS] Playing new message | vol={volume}, pitch={pitch} | text={text}");
 
         // This triggers Wit TTS via the TTSSpeaker component
-        ttsSpeaker.Speak(text);
+        ttsSpeakerCustom.Speak(text);
+    }
+    
+
+    private void Update()
+    {
+        if (SceneManagerCustom.triggeredPath)
+        {
+            SceneManagerCustom.triggeredPath = false;
+            HandlePathEntered();
+        }
     }
 
+    public void HandleCustomSpeak()
+    {
+        ttsSpeakerCustom.Speak(customMsges[msgIdx]);
+    }
+
+
+    public void HandleTTSDoneForCustom()
+    {
+        Debug.Log("Called Handle Custom TTS DONE");
+
+        if (msgIdx == 0)
+        {
+            msgIdx++;
+            Invoke("AudioTime", 1);
+            Invoke("HelpCollider", 5);
+
+        }
+        else
+        {
+            Debug.Log("CALLED going to Spawned Tile :: ");
+
+            _meshPathSpawner.DisableAll();
+            int i = idxTile;
+            int cnt = 0;
+            while (i+1 < _meshPathSpawner.spawnedObjects.Count && cnt < idxCount)
+            {
+                Debug.Log(" CALLED Spawned Tile :: "+i);
+                _meshPathSpawner.spawnedObjects[i+1].SetActive(true);
+                i++;
+                cnt++;
+            }
+
+            idxTile += idxCount;
+            idxCount++;
+        }
+        
+       
+    }
+
+    public void HelpCollider()
+    {
+        collider.gameObject.SetActive(true);
+    }
     private void HandleTTSDone()
     {
-        if (!pathMarker)
+        Debug.Log("Called Handle TTS DONE" +SceneManagerCustom.stressLevel);
+
+        switch (SceneManagerCustom.stressLevel)
         {
-            Debug.LogWarning("[SceneManager] pathMarker is not assigned, cannot place marker.");
-            return;
+            case 1:
+                breathingAnimation.SetMovementSpeed(0);
+                halo[2].SetActive(true);
+                halo[0].SetActive(false);
+                halo[1].SetActive(false);
+                break;
+            case 2:
+                breathingAnimation.SetMovementSpeed(0.5f);
+                halo[1].SetActive(true);
+                halo[0].SetActive(false);
+                halo[2].SetActive(false);
+                break;
+            default:
+                breathingAnimation.SetMovementSpeed(1);
+                halo[0].SetActive(true);
+                halo[1].SetActive(false);
+                halo[2].SetActive(false);
+                break;
         }
+        
 
-        if (!xrRigRoot)
-        {
-            Debug.LogWarning("[SceneManager] xrRigRoot not assigned — cannot spawn ahead of XR rig.");
-            return;
-        }
+        breathingAnimation.gameObject.SetActive(true);
+        
+        Invoke("HandleCustomSpeak", 3);
+        msgIdx++;
+        Debug.Log("Called Handle TTS DONE" +SceneManagerCustom.stressLevel);
 
-        // Use XR rig forward on the XZ plane
-        Vector3 forward = xrRigRoot.forward;
-        forward.y = 0f;
-        if (forward.sqrMagnitude < 0.0001f)
-            forward = Vector3.forward;
-        forward.Normalize();
-
-        // Position 1 unit (or spawnDistance) in front of the rig
-        Vector3 spawnPos = xrRigRoot.position + forward * spawnDistance;
-        spawnPos.y += spawnHeightOffset; // optional height tweak
-
-        Quaternion rot = Quaternion.LookRotation(forward, Vector3.up);
-
-        // Move and enable existing marker instead of instantiating
-        pathMarker.transform.SetPositionAndRotation(spawnPos, rot);
-        pathMarker.SetActive(true);
-
-        Debug.Log($"[SceneManager] Moved & enabled path marker at {spawnPos}");
+        
     }
 
+    public void AudioTime()
+    {
+        if (ttsAudioHandler.lastOllamaMessage == "")
+        {
+            SceneManagerCustom.stressLevel = 1;
+            ttsAudioHandler.lastOllamaMessage = "Take deep breaths, short break recommended";
+        }
+        ttsAudioHandler.SpeakText();
+    }
     private void HandlePathEntered()
     {
-        Debug.Log("[SceneManager] Player entered path marker. Destroying it.");
+        Debug.Log("Called Handle Path");
+      
+        tileEncounterd++;
 
-        if (pathMarker != null)
+        if (tileEncounterd == idxCount - 1)
         {
-            Destroy(pathMarker);
-            // If you want to reuse it later instead of destroying:
-            // pathMarker.SetActive(false);
+            breathingAnimation.gameObject.SetActive(false);
+            Invoke("AudioTime", 1);
+            tileEncounterd = 0;
         }
+           
+        
+        
     }
 
 }

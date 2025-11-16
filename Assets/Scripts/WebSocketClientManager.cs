@@ -10,6 +10,8 @@ public class EEGMessage
     public float timestamp;
     public AverageData average;
     public int buffer_size;
+    
+    public int stress;
     public string ollama_response;
 }
 
@@ -36,7 +38,7 @@ public class WebSocketClientManager : MonoBehaviour
     public event Action<string> OnOllamaResponseReceived;  // New event for ollama status
     public event Action OnConnected;
     public event Action<WebSocketCloseCode> OnDisconnected;
-
+        
     private async void Start()
     {
         if (connectOnStart)
@@ -76,8 +78,8 @@ public class WebSocketClientManager : MonoBehaviour
             // Parse JSON and extract ollama_response
             try
             {
-                EEGMessage data = JsonUtility.FromJson<EEGMessage>(msg);
-                
+                var data = JsonUtility.FromJson<EEGMessage>(msg);
+                Debug.Log("WebScoket :: "+msg);
                 if (!string.IsNullOrEmpty(data.ollama_response))
                 {
                     Debug.Log($"[WS] Ollama Status: {data.ollama_response}");
@@ -85,6 +87,10 @@ public class WebSocketClientManager : MonoBehaviour
                     // Trigger TTS function with the ollama response
                     OnOllamaResponseReceived?.Invoke(data.ollama_response);
                 }
+                
+                Debug.Log("WebSocket Stree LEevel :: "+data.stress);
+                SceneManagerCustom.stressLevel = data.stress;
+
             }
             catch (Exception ex)
             {

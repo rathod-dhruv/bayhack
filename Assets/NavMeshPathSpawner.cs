@@ -157,7 +157,7 @@ public class NavMeshPathSpawner : MonoBehaviour
     public bool logDetails = true;
 
     private NavMeshPath _path;
-    private readonly List<GameObject> spawnedObjects = new();
+    public readonly List<GameObject> spawnedObjects = new();
 
     private void Awake()
     {
@@ -353,8 +353,17 @@ public class NavMeshPathSpawner : MonoBehaviour
 
         if (logDetails)
             Debug.Log($"[NavMeshPathSpawner] Spawned {spawnedObjects.Count} prefabs along the path.");
+
+        DisableAll();
+
     }
 
+    public void DisableAll()
+    {
+        
+        foreach(var x in spawnedObjects)
+            x.gameObject.SetActive(false);
+    }
     /// <summary>
     /// Removes existing breadcrumbs from the scene.
     /// </summary>

@@ -7,10 +7,11 @@ public class TTSAudioHandler : MonoBehaviour
     [Header("References")]
     [SerializeField] private WebSocketClientManager wsClient;
     [SerializeField] private TTSSpeaker ttsSpeaker;
+    [SerializeField] private TTSSpeaker ttsSpeaker2;
     [SerializeField] private AudioSource ttsAudioSource;
 
     // Track last message to avoid repeats
-    private string lastOllamaMessage = "";
+    public string lastOllamaMessage = "";
 
     private void Awake()
     {
@@ -47,8 +48,9 @@ public class TTSAudioHandler : MonoBehaviour
             Debug.LogWarning("[TTS] Empty ollama response received");
             return;
         }
-
+        lastOllamaMessage = ollamaText;
         // Check if message is different from last one
+        /*
         if (ollamaText == lastOllamaMessage)
         {
             Debug.Log($"[TTS] Skipping duplicate message: {ollamaText}");
@@ -58,15 +60,19 @@ public class TTSAudioHandler : MonoBehaviour
         Debug.Log($"[TTS] New message received: {ollamaText}");
 
         // Update last message
-        lastOllamaMessage = ollamaText;
-
-        // Parse the state from the text to determine intent
-        string intent = ParseStateIntent(ollamaText);
         
-        // Speak the full ollama response text
-        HandleSpeakIntent(intent, ollamaText);
+        */
     }
 
+    public void SpeakText()
+    {
+        
+        // Parse the state from the text to determine intent
+        string intent = ParseStateIntent(lastOllamaMessage);
+        
+        // Speak the full ollama response text
+        HandleSpeakIntent(intent, lastOllamaMessage);
+    }
     private string ParseStateIntent(string ollamaText)
     {
         // Parse state from text like "State: relaxed. ..." or "State: stressed. ..."
@@ -148,6 +154,22 @@ public class TTSAudioHandler : MonoBehaviour
         // This triggers Wit TTS via the TTSSpeaker component
         ttsSpeaker.Speak(text);
     }
+    
+    
+    private void SpeakWithTTS_Custom(string text, float volume, float pitch)
+    {
+        if (ttsAudioSource != null)
+        {
+            ttsAudioSource.volume = volume;
+            ttsAudioSource.pitch = pitch;
+        }
+
+        Debug.Log($"[TTS] Playing new message | vol={volume}, pitch={pitch} | text={text}");
+
+        // This triggers Wit TTS via the TTSSpeaker component
+        ttsSpeaker2.Speak(text);
+    }
+
 
     // Optional: Public method to reset the last message (useful for testing or manual resets)
     public void ResetLastMessage()
