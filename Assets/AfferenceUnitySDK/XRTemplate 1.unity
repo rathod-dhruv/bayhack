@@ -4337,6 +4337,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 1479799623}
     m_Modifications:
     - target: {fileID: 3713777435302028439, guid: e51950f53442f49feaeaa8248721e6e6, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3713777435302028439, guid: e51950f53442f49feaeaa8248721e6e6, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3713777435302028439, guid: e51950f53442f49feaeaa8248721e6e6, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3713777435302028439, guid: e51950f53442f49feaeaa8248721e6e6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -9126,6 +9138,9 @@ MonoBehaviour:
   tileEncounterd: 0
   _AgentController: {fileID: 1833808765}
   collider: {fileID: 0}
+  lastAudioCalledTime: 0
+  customCall: 0
+  audioCall: 0
 --- !u!4 &997725471
 Transform:
   m_ObjectHideFlags: 0

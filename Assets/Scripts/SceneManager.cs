@@ -2,6 +2,8 @@ using UnityEngine;
 using Meta.WitAi.TTS.Utilities;
 using System;
 using MRUtilityKitSample.NavMesh;
+using UnityEngine.SceneManagement;
+using Random = UnityEngine.Random;
 
 public class SceneManagerCustom : MonoBehaviour
 {
@@ -35,6 +37,10 @@ public class SceneManagerCustom : MonoBehaviour
     
     public NavMeshAgentController _AgentController;
     public Collider collider;
+
+    public float lastAudioCalledTime = 0;
+    public bool customCall = false;
+    public bool audioCall = false;
     private void Awake()
     {
         // Fallback auto-wiring
@@ -96,22 +102,37 @@ public class SceneManagerCustom : MonoBehaviour
             SceneManagerCustom.triggeredPath = false;
             HandlePathEntered();
         }
+
+        /*if (audioCall && Time.time - lastAudioCalledTime > 25)
+        {
+            audioCall = false;
+            if(customCall)
+                HandleTTSDoneForCustom();
+            else
+            {
+                HandleTTSDone();
+            }
+        }*/
     }
 
     public void HandleCustomSpeak()
     {
+        audioCall = true;
+        customCall = true;
+        lastAudioCalledTime = Time.time;
         ttsSpeakerCustom.Speak(customMsges[msgIdx]);
     }
 
 
     public void HandleTTSDoneForCustom()
     {
+        audioCall = false;
         Debug.Log("Called Handle Custom TTS DONE");
 
         if (msgIdx == 0)
         {
             msgIdx++;
-            Invoke("AudioTime", 1);
+            Invoke("AudioTime", 4);
             Invoke("HelpCollider", 5);
 
         }
@@ -143,6 +164,7 @@ public class SceneManagerCustom : MonoBehaviour
     }
     private void HandleTTSDone()
     {
+        audioCall = false;
         Debug.Log("Called Handle TTS DONE" +SceneManagerCustom.stressLevel);
 
         switch (SceneManagerCustom.stressLevel)
@@ -170,7 +192,7 @@ public class SceneManagerCustom : MonoBehaviour
 
         breathingAnimation.gameObject.SetActive(true);
         
-        Invoke("HandleCustomSpeak", 3);
+        Invoke("HandleCustomSpeak", 5);
         msgIdx++;
         Debug.Log("Called Handle TTS DONE" +SceneManagerCustom.stressLevel);
 
@@ -179,10 +201,22 @@ public class SceneManagerCustom : MonoBehaviour
 
     public void AudioTime()
     {
+        audioCall = true;
+        customCall = false;
+        lastAudioCalledTime = Time.time;
         if (ttsAudioHandler.lastOllamaMessage == "")
         {
-            SceneManagerCustom.stressLevel = 1;
+            SceneManagerCustom.stressLevel = Random.Range(1, 3 + 1);
+            if(SceneManagerCustom.stressLevel  == 1)
             ttsAudioHandler.lastOllamaMessage = "Take deep breaths, short break recommended";
+            else if (SceneManagerCustom.stressLevel == 2)
+            {
+                ttsAudioHandler.lastOllamaMessage = "You’re doing really well.";
+            }
+            else
+            {
+                ttsAudioHandler.lastOllamaMessage = "Let’s pause together.You’re doing perfectly";
+            }
         }
         ttsAudioHandler.SpeakText();
     }
@@ -195,7 +229,7 @@ public class SceneManagerCustom : MonoBehaviour
         if (tileEncounterd == idxCount - 1)
         {
             breathingAnimation.gameObject.SetActive(false);
-            Invoke("AudioTime", 1);
+            Invoke("AudioTime", 4);
             tileEncounterd = 0;
         }
            

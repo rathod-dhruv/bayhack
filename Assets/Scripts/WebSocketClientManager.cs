@@ -12,7 +12,7 @@ public class EEGMessage
     public int buffer_size;
     
     public int stress;
-    public string ollama_response;
+    public string message;
 }
 
 [System.Serializable]
@@ -80,12 +80,12 @@ public class WebSocketClientManager : MonoBehaviour
             {
                 var data = JsonUtility.FromJson<EEGMessage>(msg);
                 Debug.Log("WebScoket :: "+msg);
-                if (!string.IsNullOrEmpty(data.ollama_response))
+                if (!string.IsNullOrEmpty(data.message))
                 {
-                    Debug.Log($"[WS] Ollama Status: {data.ollama_response}");
+                    Debug.Log($"[WS] Ollama Status: {data.message}");
                     
                     // Trigger TTS function with the ollama response
-                    OnOllamaResponseReceived?.Invoke(data.ollama_response);
+                    OnOllamaResponseReceived?.Invoke(data.message);
                 }
                 
                 Debug.Log("WebSocket Stree LEevel :: "+data.stress);

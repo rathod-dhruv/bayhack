@@ -49,19 +49,10 @@ public class TTSAudioHandler : MonoBehaviour
             return;
         }
         lastOllamaMessage = ollamaText;
-        // Check if message is different from last one
-        /*
-        if (ollamaText == lastOllamaMessage)
-        {
-            Debug.Log($"[TTS] Skipping duplicate message: {ollamaText}");
-            return;
-        }
-
+        
         Debug.Log($"[TTS] New message received: {ollamaText}");
 
-        // Update last message
-        
-        */
+       
     }
 
     public void SpeakText()
