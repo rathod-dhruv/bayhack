@@ -1,8 +1,10 @@
 using UnityEngine;
 using Meta.WitAi.TTS.Utilities;
+using System;
 
 public class SceneManager : MonoBehaviour
 {
+    public String stressLevel;
     [SerializeField] private TTSSpeaker ttsSpeaker;
 
     [SerializeField] private AudioSource ttsAudioSource;
