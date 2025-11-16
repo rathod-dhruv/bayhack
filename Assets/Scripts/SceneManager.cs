@@ -1,6 +1,7 @@
 using UnityEngine;
 using Meta.WitAi.TTS.Utilities;
 using System;
+using MRUtilityKitSample.NavMesh;
 
 public class SceneManagerCustom : MonoBehaviour
 {
@@ -32,7 +33,7 @@ public class SceneManagerCustom : MonoBehaviour
     public int idxCount = 1;
     public int tileEncounterd = 0;
     
-    public NavMeshPathSpawner _meshPathSpawner;
+    public NavMeshAgentController _AgentController;
     public Collider collider;
     private void Awake()
     {
@@ -118,13 +119,13 @@ public class SceneManagerCustom : MonoBehaviour
         {
             Debug.Log("CALLED going to Spawned Tile :: ");
 
-            _meshPathSpawner.DisableAll();
+            _AgentController.DisableAll();
             int i = idxTile;
             int cnt = 0;
-            while (i+1 < _meshPathSpawner.spawnedObjects.Count && cnt < idxCount)
+            while (i+1 < _AgentController.currentPathMarkers.Count && cnt < idxCount)
             {
                 Debug.Log(" CALLED Spawned Tile :: "+i);
-                _meshPathSpawner.spawnedObjects[i+1].SetActive(true);
+                _AgentController.currentPathMarkers[i+1].SetActive(true);
                 i++;
                 cnt++;
             }

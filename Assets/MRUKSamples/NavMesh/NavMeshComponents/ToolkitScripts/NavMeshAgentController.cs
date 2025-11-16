@@ -1,227 +1,293 @@
-using System;
-using System.Collections.Generic;
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using Meta.XR.MRUtilityKit;
+using Meta.XR.Samples;
 using UnityEngine.AI;
 
-public class NavMeshPathVisualizer : MonoBehaviour
+namespace MRUtilityKitSample.NavMesh
 {
-    [Header("NavMesh Agent")]
-    [SerializeField] private NavMeshAgent agent;
-
-    [Header("Path Settings")]
-    [SerializeField] private float waypointDistance = 2f; // Distance between waypoints
-    [SerializeField] private GameObject pathPrefab; // Prefab to spawn at each waypoint
-    [SerializeField] private bool visualizePath = true;
-    [SerializeField] private Color pathColor = Color.green;
-
-    [Header("Path Management")]
-    [SerializeField] private bool clearPreviousPath = true; // Clear old waypoints when setting new destination
-
-    private List<Vector3> pathPoints = new List<Vector3>();
-    private List<GameObject> spawnedPathObjects = new List<GameObject>();
-    private NavMeshPath currentPath;
-
-    private void Awake()
+    [MetaCodeSample("MRUKSample-NavMesh")]
+    public class NavMeshAgentController : MonoBehaviour
     {
-        if (agent == null)
-            agent = GetComponent<NavMeshAgent>();
+        [Header("Distance Settings")]
+        public float minDistanceFromUser = 3f; // Minimum distance for spawn
+        public float maxDistanceFromUser = 8f; // Maximum distance for spawn
+        
+        [Header("Path Visualization")]
+        public GameObject pathPrefab; // Assign your path marker prefab
+        public float pathSpacing = 0.5f; // Distance between path markers
+        public bool spawnPathMarkers = true;
+        
+        [Header("Original Settings")]
+        private UnityEngine.AI.NavMeshAgent agent;
+        private GameObject positionIndicator;
+        public bool VisualizeTargetPosition = false;
+        
+        public List<GameObject> currentPathMarkers = new List<GameObject>();
+        private Transform userTransform; // Will use camera
+        private bool hasSpawnedPath = false; // Flag to spawn only once
 
-        currentPath = new NavMeshPath();
-    }
-
-   
-
-    /// <summary>
-    /// Set a destination and create waypoints along the path
-    /// </summary>
-    public void SetDestinationAndCreatePath(Vector3 destination)
-    {
-        if (agent == null)
+        void OnEnable()
         {
-            Debug.LogError("[PathVisualizer] NavMeshAgent is null!");
-            return;
-        }
-
-        // Clear previous path if needed
-        if (clearPreviousPath)
-        {
-            ClearPath();
-        }
-
-        // Calculate path
-        if (agent.CalculatePath(destination, currentPath))
-        {
-            if (currentPath.status == NavMeshPathStatus.PathComplete)
-            {
-                // Generate waypoints along the path
-                GenerateWaypointsAlongPath(currentPath);
-
-                // Actually set the agent's destination
-                agent.SetDestination(destination);
-
-                Debug.Log($"[PathVisualizer] Path created with {pathPoints.Count} waypoints");
-            }
-            else
-            {
-                Debug.LogWarning($"[PathVisualizer] Path incomplete! Status: {currentPath.status}");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("[PathVisualizer] Failed to calculate path!");
-        }
-    }
-
-    /// <summary>
-    /// Generate waypoints at fixed intervals along the NavMesh path
-    /// </summary>
-    private void GenerateWaypointsAlongPath(NavMeshPath path)
-    {
-        pathPoints.Clear();
-
-        if (path.corners.Length < 2)
-        {
-            Debug.LogWarning("[PathVisualizer] Path has less than 2 corners");
-            return;
-        }
-
-        // Start from agent's current position
-        Vector3 currentPoint = agent.transform.position;
-        pathPoints.Add(currentPoint);
-
-        // Spawn prefab at start
-        if (pathPrefab != null)
-        {
-            SpawnPathPrefab(currentPoint, 0);
-        }
-
-        float accumulatedDistance = 0f;
-        int waypointIndex = 1;
-
-        // Iterate through path corners
-        for (int i = 0; i < path.corners.Length - 1; i++)
-        {
-            Vector3 segmentStart = (i == 0) ? currentPoint : path.corners[i];
-            Vector3 segmentEnd = path.corners[i + 1];
+            agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            var childTransform = transform.Find("PositionIndicator");
+            positionIndicator = childTransform?.gameObject;
             
-            float segmentLength = Vector3.Distance(segmentStart, segmentEnd);
-            Vector3 segmentDirection = (segmentEnd - segmentStart).normalized;
+            // Get user camera position
+            userTransform = Camera.main.transform;
+        }
 
-            float distanceAlongSegment = 0f;
+        void Start()
+        {
+            // Spawn path ONCE on start
+            SpawnDestinationAndPath();
+        }
 
-            // Place waypoints along this segment
-            while (distanceAlongSegment < segmentLength)
+        void SpawnDestinationAndPath()
+        {
+            if (hasSpawnedPath)
             {
-                float remainingDistance = waypointDistance - accumulatedDistance;
+                Debug.Log("Path already spawned, skipping...");
+                return;
+            }
 
-                if (distanceAlongSegment + remainingDistance <= segmentLength)
+            // Generate random position FAR from user
+            var newPos = GetRandomFarPosition();
+
+            var room = MRUK.Instance?.GetCurrentRoom();
+            if (!room)
+            {
+                Debug.LogError("No room found!");
+                return;
+            }
+
+            var test = room.IsPositionInRoom(newPos, false);
+
+            if (!test)
+            {
+                Debug.Log("[NavMeshAgent] [Error]: destination is outside the room bounds, retrying...");
+                Invoke(nameof(SpawnDestinationAndPath), 0.5f); // Retry after delay
+                return;
+            }
+
+            if (VisualizeTargetPosition && positionIndicator != null)
+            {
+                positionIndicator.transform.parent = null;
+                positionIndicator.transform.position = newPos;
+            }
+
+            // Set destination ONCE
+            agent.SetDestination(newPos);
+            
+            // Set speed
+            agent.speed = Random.Range(1.2f, 1.6f);
+            
+            // Wait for path calculation then spawn markers
+            StartCoroutine(SpawnPathAfterCalculation());
+            
+            hasSpawnedPath = true;
+            Debug.Log($"Destination set at {newPos}, distance: {Vector3.Distance(transform.position, newPos):F2}m");
+        }
+
+        // Generate random position that is FAR from user
+        Vector3 GetRandomFarPosition()
+        {
+            Vector3 userPos = userTransform.position;
+            Vector3 candidatePos = Vector3.zero;
+            int maxAttempts = 20;
+            
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                candidatePos = RandomNavPoint();
+                
+                float distance = Vector3.Distance(userPos, candidatePos);
+                
+                // Check if distance is within desired range
+                if (distance >= minDistanceFromUser && distance <= maxDistanceFromUser)
                 {
-                    // Place waypoint
-                    distanceAlongSegment += remainingDistance;
-                    Vector3 waypointPos = segmentStart + segmentDirection * distanceAlongSegment;
-                    
-                    pathPoints.Add(waypointPos);
-
-                    // Spawn prefab at waypoint
-                    if (pathPrefab != null)
-                    {
-                        SpawnPathPrefab(waypointPos, waypointIndex);
-                    }
-
-                    waypointIndex++;
-                    accumulatedDistance = 0f;
+                    Debug.Log($"Found position {distance:F2}m away from user");
+                    return candidatePos;
                 }
-                else
+            }
+            
+            // Fallback: just use random point
+            Debug.LogWarning("Could not find point in distance range, using random point");
+            return candidatePos;
+        }
+
+        // Wait for NavMesh path calculation then spawn markers
+        IEnumerator SpawnPathAfterCalculation()
+        {
+            // Wait for path to be calculated
+            while (agent.pathPending)
+            {
+                yield return null;
+            }
+            
+            if (spawnPathMarkers && agent.hasPath)
+            {
+                SpawnPathMarkers();
+            }
+
+            DisableAll();
+        }
+
+        // Spawn prefabs along the NavMesh path
+        void SpawnPathMarkers()
+        {
+            // Clear old markers
+            ClearPathMarkers();
+            
+            if (pathPrefab == null)
+            {
+                Debug.LogWarning("Path Prefab not assigned!");
+                return;
+            }
+            
+            NavMeshPath path = agent.path;
+            
+            if (path.corners.Length < 2)
+            {
+                Debug.LogWarning("Path has less than 2 corners");
+                return;
+            }
+            
+            // Calculate total path length
+            float totalLength = 0f;
+            for (int i = 0; i < path.corners.Length - 1; i++)
+            {
+                totalLength += Vector3.Distance(path.corners[i], path.corners[i + 1]);
+            }
+            
+            Debug.Log($"Path length: {totalLength:F2}m, Spawning markers every {pathSpacing}m");
+            
+            // Spawn markers along path
+            float accumulatedDistance = 0f;
+            
+            for (int i = 0; i < path.corners.Length - 1; i++)
+            {
+                Vector3 segmentStart = path.corners[i];
+                Vector3 segmentEnd = path.corners[i + 1];
+                float segmentLength = Vector3.Distance(segmentStart, segmentEnd);
+                
+                // Spawn markers along this segment
+                while (accumulatedDistance < segmentLength)
                 {
-                    // Move to next segment
-                    accumulatedDistance += (segmentLength - distanceAlongSegment);
+                    float t = accumulatedDistance / segmentLength;
+                    Vector3 markerPos = Vector3.Lerp(segmentStart, segmentEnd, t);
+                    
+                    // Calculate rotation to face next point
+                    Vector3 direction = (segmentEnd - segmentStart).normalized;
+                    Quaternion rotation = Quaternion.LookRotation(direction);
+                    
+                    // Spawn marker
+                    GameObject marker = Instantiate(pathPrefab, markerPos, rotation);
+                    currentPathMarkers.Add(marker);
+                    
+                    accumulatedDistance += pathSpacing;
+                }
+                
+                accumulatedDistance -= segmentLength;
+            }
+            
+            // Always add final corner
+            GameObject finalMarker = Instantiate(pathPrefab, path.corners[path.corners.Length - 1], Quaternion.identity);
+            currentPathMarkers.Add(finalMarker);
+            
+            Debug.Log($"Spawned {currentPathMarkers.Count} path markers");
+            
+        }
+
+        // Clear all existing path markers
+        void ClearPathMarkers()
+        {
+            foreach (var marker in currentPathMarkers)
+            {
+                if (marker != null)
+                {
+                    Destroy(marker);
+                }
+            }
+            currentPathMarkers.Clear();
+        }
+
+        // Generate a new position on the NavMesh
+        public static Vector3 RandomNavPoint()
+        {
+            var triangulation = UnityEngine.AI.NavMesh.CalculateTriangulation();
+
+            if (triangulation.indices.Length == 0)
+            {
+                return Vector3.zero;
+            }
+
+            float totalArea = 0.0f;
+            List<float> areas = new List<float>();
+            for (int i = 0; i < triangulation.indices.Length;)
+            {
+                var i0 = triangulation.indices[i];
+                var i1 = triangulation.indices[i + 1];
+                var i2 = triangulation.indices[i + 2];
+                var v0 = triangulation.vertices[i0];
+                var v1 = triangulation.vertices[i1];
+                var v2 = triangulation.vertices[i2];
+                var cross = Vector3.Cross(v1 - v0, v2 - v0);
+                float area = cross.magnitude * 0.5f;
+                totalArea += area;
+                areas.Add(area);
+                i += 3;
+            }
+
+            var rand = Random.Range(0, totalArea);
+            int triangleIndex = 0;
+            for (; triangleIndex < areas.Count - 1; ++triangleIndex)
+            {
+                rand -= areas[triangleIndex];
+                if (rand <= 0.0f)
+                {
                     break;
                 }
             }
-        }
 
-        // Add final destination point
-        Vector3 finalPoint = path.corners[path.corners.Length - 1];
-        if (Vector3.Distance(pathPoints[pathPoints.Count - 1], finalPoint) > 0.1f)
-        {
-            pathPoints.Add(finalPoint);
-            
-            if (pathPrefab != null)
             {
-                SpawnPathPrefab(finalPoint, waypointIndex);
+                var i0 = triangulation.indices[triangleIndex * 3];
+                var i1 = triangulation.indices[triangleIndex * 3 + 1];
+                var i2 = triangulation.indices[triangleIndex * 3 + 2];
+                var v0 = triangulation.vertices[i0];
+                var v1 = triangulation.vertices[i1];
+                var v2 = triangulation.vertices[i2];
+
+                float u = Random.Range(0.0f, 1.0f);
+                float v = Random.Range(0.0f, 1.0f);
+                if (u + v > 1.0f)
+                {
+                    if (u > v)
+                    {
+                        u = 1.0f - u;
+                    }
+                    else
+                    {
+                        v = 1.0f - v;
+                    }
+                }
+
+                return v0 + u * (v1 - v0) + v * (v2 - v0);
             }
         }
-    }
 
-    /// <summary>
-    /// Spawn prefab at waypoint location
-    /// </summary>
-    private void SpawnPathPrefab(Vector3 position, int index)
-    {
-        GameObject spawnedObj = Instantiate(pathPrefab, position, Quaternion.identity);
-        spawnedObj.name = $"PathWaypoint_{index}";
-        spawnedObj.transform.SetParent(transform); // Optional: parent to this object
-        spawnedPathObjects.Add(spawnedObj);
-    }
-
-    /// <summary>
-    /// Clear all spawned path objects and path points
-    /// </summary>
-    public void ClearPath()
-    {
-        // Destroy all spawned objects
-        foreach (GameObject obj in spawnedPathObjects)
+        public void DisableAll()
         {
-            if (obj != null)
-                Destroy(obj);
+            foreach (var x in currentPathMarkers)
+            {
+                x.SetActive(false);
+            }
         }
-
-        spawnedPathObjects.Clear();
-        pathPoints.Clear();
-
-        Debug.Log("[PathVisualizer] Path cleared");
-    }
-
-    /// <summary>
-    /// Get all waypoint positions
-    /// </summary>
-    public List<Vector3> GetPathPoints()
-    {
-        return new List<Vector3>(pathPoints);
-    }
-
-    /// <summary>
-    /// Get all spawned path objects
-    /// </summary>
-    public List<GameObject> GetSpawnedPathObjects()
-    {
-        return new List<GameObject>(spawnedPathObjects);
-    }
-
-    // Visualize the path in the editor
-    private void OnDrawGizmos()
-    {
-        if (!visualizePath || pathPoints.Count < 2)
-            return;
-
-        Gizmos.color = pathColor;
-
-        // Draw lines between waypoints
-        for (int i = 0; i < pathPoints.Count - 1; i++)
+        void OnDisable()
         {
-            Gizmos.DrawLine(pathPoints[i], pathPoints[i + 1]);
-            Gizmos.DrawSphere(pathPoints[i], 0.1f);
+            ClearPathMarkers();
         }
-
-        // Draw final point
-        if (pathPoints.Count > 0)
-        {
-            Gizmos.DrawSphere(pathPoints[pathPoints.Count - 1], 0.15f);
-        }
-    }
-
-    private void OnDestroy()
-    {
-        ClearPath();
     }
 }
