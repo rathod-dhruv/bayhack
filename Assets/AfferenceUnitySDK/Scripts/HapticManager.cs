@@ -62,13 +62,21 @@ public class HapticManager : MonoBehaviour
         Application.targetFrameRate = 0;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        SetCommType("ble");
+    SetCommType("ble");
+    SetDevice("4df3");
+    LoadUser("bjghj");
+    ConnectCurrentUserAsync();// <-- Add this line here
 #endif
     }
 
     public void SetCommType(string type) => commType = type;
     public void SetPort(string portName) => port = portName;
     public void SetDevice(string deviceName) => port = $"Afference SBRing-{deviceName.Trim()}";
+
+    private void OnEnable()
+    {
+        //ToggleStim();
+    }
 
     public void LoadUser(string fileName)
     {

@@ -9,12 +9,12 @@ public class PanelManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-#if UNITY_STANDALONE_WIN || (UNITY_EDITOR_WIN && !UNITY_ANDROID && !UNITY_IOS)
+/*#if UNITY_STANDALONE_WIN || (UNITY_EDITOR_WIN && !UNITY_ANDROID && !UNITY_IOS)
         SetActivePanel(0);
 #else
         SetActivePanel(2);
         foreach(GameObject item in platformDepItems){ item.SetActive(false); }
-#endif
+#endif*/
     }
 
     public void SetActivePanel(int panel)
