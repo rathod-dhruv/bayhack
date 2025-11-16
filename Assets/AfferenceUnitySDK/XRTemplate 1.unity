@@ -4686,6 +4686,7 @@ GameObject:
   m_Component:
   - component: {fileID: 630069802}
   - component: {fileID: 630069803}
+  - component: {fileID: 630069804}
   m_Layer: 0
   m_Name: Collider
   m_TagString: Player
@@ -4705,7 +4706,10 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2114077606}
+  - {fileID: 859366404}
+  - {fileID: 1678846449}
   m_Father: {fileID: 1479799628}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &630069803
@@ -4731,6 +4735,19 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &630069804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 630069801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bc95e1d8d4edb042aaf9ba7127f56fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  camerat: {fileID: 1479799623}
 --- !u!1 &635477228
 GameObject:
   m_ObjectHideFlags: 0
@@ -7549,7 +7566,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1479799628}
+    m_TransformParent: {fileID: 630069802}
     m_Modifications:
     - target: {fileID: 2698987528073032621, guid: 672380e7d97a84b7481ff0452e9594aa, type: 3}
       propertyPath: m_Name
@@ -8434,7 +8451,7 @@ MonoBehaviour:
   _lutWeight: 1
   _flipLutY: 1
   serializedSurfaceGeometry: []
-  textureOpacity_: 0.44
+  textureOpacity_: 0.325
   edgeRenderingEnabled_: 0
   edgeColor_: {r: 1, g: 1, b: 1, a: 1}
   colorMapType: 0
@@ -9108,7 +9125,7 @@ MonoBehaviour:
   idxCount: 1
   tileEncounterd: 0
   _AgentController: {fileID: 1833808765}
-  collider: {fileID: 630069803}
+  collider: {fileID: 0}
 --- !u!4 &997725471
 Transform:
   m_ObjectHideFlags: 0
@@ -14063,16 +14080,7 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 893350939}
     - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
-      insertIndex: 0
-      addedObject: {fileID: 2114077606}
-    - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       insertIndex: 1
-      addedObject: {fileID: 859366404}
-    - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
-      insertIndex: 2
-      addedObject: {fileID: 1678846449}
-    - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
-      insertIndex: 4
       addedObject: {fileID: 630069802}
     - targetCorrespondingSourceObject: {fileID: 459718, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       insertIndex: -1
@@ -15555,7 +15563,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1479799628}
+    m_TransformParent: {fileID: 630069802}
     m_Modifications:
     - target: {fileID: 2041237773511895225, guid: ae891ecab0c9d467a9aa0cca058bb975, type: 3}
       propertyPath: m_LocalScale.x
@@ -16768,7 +16776,7 @@ MonoBehaviour:
   Colliders: 1
   CutHoles: 0
   castShadows: 1
-  hideMesh: 0
+  hideMesh: 1
   Layer: 0
   textureCoordinateModes:
   - WallU: 5
@@ -17486,7 +17494,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5dd622991d2fe0409a53904bf93cea8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minDistanceFromUser: 3
+  minDistanceFromUser: 4
   maxDistanceFromUser: 8
   pathPrefab: {fileID: 1955825054796484070, guid: af5ec3141f664b745bbaf3052d4acc5c, type: 3}
   pathSpacing: 0.5
@@ -19990,7 +19998,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1479799628}
+    m_TransformParent: {fileID: 630069802}
     m_Modifications:
     - target: {fileID: 1530575732070173728, guid: 80a9c487353a94c838cb6665f88be782, type: 3}
       propertyPath: m_Name
