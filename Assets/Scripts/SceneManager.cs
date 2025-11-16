@@ -36,8 +36,7 @@ public class SceneManagerCustom : MonoBehaviour
     public int tileEncounterd = 0;
     
     public NavMeshAgentController _AgentController;
-    public Collider collider;
-
+    public HapticEventPulse _HapticEventPulse;
     public float lastAudioCalledTime = 0;
     public bool customCall = false;
     public bool audioCall = false;
@@ -66,17 +65,25 @@ public class SceneManagerCustom : MonoBehaviour
         
         
     }
-    
-    
-    
 
-    private void Start()
+
+    public void Start()
     {
+        
+    }
+
+    public void StartIntro()
+    {
+        lastAudioCalledTime = Time.time;
+        audioCall = true;
         Invoke("StartAudio", 1);
     }
 
     public void StartAudio()
     {
+        lastAudioCalledTime = Time.time;
+        audioCall = true;
+        
         HandleCustomSpeak();
     }
     
@@ -103,7 +110,7 @@ public class SceneManagerCustom : MonoBehaviour
             HandlePathEntered();
         }
 
-        /*if (audioCall && Time.time - lastAudioCalledTime > 25)
+        if (audioCall && Time.time - lastAudioCalledTime > 25)
         {
             audioCall = false;
             if(customCall)
@@ -112,7 +119,7 @@ public class SceneManagerCustom : MonoBehaviour
             {
                 HandleTTSDone();
             }
-        }*/
+        }
     }
 
     public void HandleCustomSpeak()
@@ -127,13 +134,13 @@ public class SceneManagerCustom : MonoBehaviour
     public void HandleTTSDoneForCustom()
     {
         audioCall = false;
+        customCall = false;
         Debug.Log("Called Handle Custom TTS DONE");
 
         if (msgIdx == 0)
         {
             msgIdx++;
             Invoke("AudioTime", 4);
-            Invoke("HelpCollider", 5);
 
         }
         else
@@ -158,15 +165,13 @@ public class SceneManagerCustom : MonoBehaviour
        
     }
 
-    public void HelpCollider()
-    {
-        collider.gameObject.SetActive(true);
-    }
+    
     private void HandleTTSDone()
     {
         audioCall = false;
+        customCall = false;
         Debug.Log("Called Handle TTS DONE" +SceneManagerCustom.stressLevel);
-
+        _HapticEventPulse.PlayHaptic();
         switch (SceneManagerCustom.stressLevel)
         {
             case 1:
@@ -228,6 +233,7 @@ public class SceneManagerCustom : MonoBehaviour
 
         if (tileEncounterd == idxCount - 1)
         {
+            _HapticEventPulse.StopPulse();
             breathingAnimation.gameObject.SetActive(false);
             Invoke("AudioTime", 4);
             tileEncounterd = 0;

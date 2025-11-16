@@ -64,8 +64,7 @@ public class HapticManager : MonoBehaviour
 #if UNITY_ANDROID && !UNITY_EDITOR
     SetCommType("ble");
     SetDevice("4df3");
-    LoadUser("bjghj");
-    ConnectCurrentUserAsync();// <-- Add this line here
+   
 #endif
     }
 
