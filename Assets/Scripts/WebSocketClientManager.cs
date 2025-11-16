@@ -4,6 +4,25 @@ using System.Threading.Tasks;
 using NativeWebSocket;
 using UnityEngine;
 
+[System.Serializable]
+public class EEGMessage
+{
+    public float timestamp;
+    public AverageData average;
+    public int buffer_size;
+    public string ollama_response;
+}
+
+[System.Serializable]
+public class AverageData
+{
+    public float Delta;
+    public float Theta;
+    public float Alpha;
+    public float Beta;
+    public float Gamma;
+}
+
 public class WebSocketClientManager : MonoBehaviour
 {
     [Header("WebSocket")]
@@ -14,6 +33,7 @@ public class WebSocketClientManager : MonoBehaviour
     private WebSocket websocket;
 
     public event Action<string> OnMessageReceived;
+    public event Action<string> OnOllamaResponseReceived;  // New event for ollama status
     public event Action OnConnected;
     public event Action<WebSocketCloseCode> OnDisconnected;
 
@@ -52,7 +72,26 @@ public class WebSocketClientManager : MonoBehaviour
         websocket.OnMessage += (bytes) =>
         {
             string msg = Encoding.UTF8.GetString(bytes);
-            Debug.Log("[WS] Received: " + msg);
+            
+            // Parse JSON and extract ollama_response
+            try
+            {
+                EEGMessage data = JsonUtility.FromJson<EEGMessage>(msg);
+                
+                if (!string.IsNullOrEmpty(data.ollama_response))
+                {
+                    Debug.Log($"[WS] Ollama Status: {data.ollama_response}");
+                    
+                    // Trigger TTS function with the ollama response
+                    OnOllamaResponseReceived?.Invoke(data.ollama_response);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[WS] Failed to parse message: {ex.Message}");
+            }
+            
+            // Still invoke the raw message event if needed
             OnMessageReceived?.Invoke(msg);
         };
 

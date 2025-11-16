@@ -9,13 +9,8 @@ public class TTSAudioHandler : MonoBehaviour
     [SerializeField] private TTSSpeaker ttsSpeaker;
     [SerializeField] private AudioSource ttsAudioSource;
 
-    [Serializable]
-    private class SpeakCommand
-    {
-        public string intent;   // "high", "medium", "low"
-        public string text;     // text to speak
-        // optional: public string type; // e.g. "tts" if you want to route different message types
-    }
+    // Track last message to avoid repeats
+    private string lastOllamaMessage = "";
 
     private void Awake()
     {
@@ -30,40 +25,68 @@ public class TTSAudioHandler : MonoBehaviour
         ttsSpeaker.Events.OnLoadSuccess.AddListener((speaker, s) => Debug.Log($"OnLoadSuccess: {s}"));
         ttsSpeaker.Events.OnPlaybackStart.AddListener((speaker, s) => Debug.Log($"OnPlaybackStart: {s}"));
         ttsSpeaker.Events.OnPlaybackComplete.AddListener((speaker, s) => Debug.Log($"OnPlaybackComplete: {s}"));
-        ttsSpeaker.Events.OnLoadSuccess.AddListener((speaker, s) => Debug.Log($"OnLoadSuccess: {s}"));
     }
 
     private void OnEnable()
     {
         if (wsClient != null)
-            wsClient.OnMessageReceived += HandleWebSocketMessage;
+            wsClient.OnOllamaResponseReceived += HandleOllamaResponse;
     }
 
     private void OnDisable()
     {
         if (wsClient != null)
-            wsClient.OnMessageReceived -= HandleWebSocketMessage;
+            wsClient.OnOllamaResponseReceived -= HandleOllamaResponse;
     }
 
-    private void HandleWebSocketMessage(string raw)
+    private void HandleOllamaResponse(string ollamaText)
     {
-        // Here you can optionally filter by message type if you add one.
-        // For now we just assume anything coming in is a SpeakCommand.
-        try
+        // ollamaText is plain text like: "State: stressed. Take deep breaths, short break recommended"
+        if (string.IsNullOrWhiteSpace(ollamaText))
         {
-            SpeakCommand cmd = JsonUtility.FromJson<SpeakCommand>(raw);
-            if (cmd == null || string.IsNullOrWhiteSpace(cmd.text))
-            {
-                Debug.LogWarning("[TTS] Invalid SpeakCommand payload: " + raw);
-                return;
-            }
+            Debug.LogWarning("[TTS] Empty ollama response received");
+            return;
+        }
 
-            HandleSpeakIntent(cmd.intent, cmd.text);
-        }
-        catch (Exception e)
+        // Check if message is different from last one
+        if (ollamaText == lastOllamaMessage)
         {
-            Debug.LogWarning("[TTS] Failed to parse SpeakCommand: " + e + " | raw=" + raw);
+            Debug.Log($"[TTS] Skipping duplicate message: {ollamaText}");
+            return;
         }
+
+        Debug.Log($"[TTS] New message received: {ollamaText}");
+
+        // Update last message
+        lastOllamaMessage = ollamaText;
+
+        // Parse the state from the text to determine intent
+        string intent = ParseStateIntent(ollamaText);
+        
+        // Speak the full ollama response text
+        HandleSpeakIntent(intent, ollamaText);
+    }
+
+    private string ParseStateIntent(string ollamaText)
+    {
+        // Parse state from text like "State: relaxed. ..." or "State: stressed. ..."
+        string textLower = ollamaText.ToLower();
+
+        if (textLower.Contains("state: relaxed") || textLower.Contains("state: calm"))
+        {
+            return "high";  // very calm voice
+        }
+        else if (textLower.Contains("state: focused") || textLower.Contains("state: moderate"))
+        {
+            return "mild";  // moderate voice
+        }
+        else if (textLower.Contains("state: stressed") || textLower.Contains("state: alert") || textLower.Contains("state: active"))
+        {
+            return "calm";  // normal voice (ironically named, but keeps your existing logic)
+        }
+        
+        // Default to calm/normal
+        return "calm";
     }
 
     private void HandleSpeakIntent(string intent, string text)
@@ -80,8 +103,8 @@ public class TTSAudioHandler : MonoBehaviour
 
         // Your mapping:
         // "high"   -> very calm (slow, gentle but not deep)
-        // "medium" -> moderate calm
-        // "low"    -> normal
+        // "mild"   -> moderate calm
+        // "calm"   -> normal
         switch ((intent ?? "").ToLowerInvariant())
         {
             case "high":
@@ -120,9 +143,16 @@ public class TTSAudioHandler : MonoBehaviour
             ttsAudioSource.pitch = pitch;
         }
 
-        Debug.Log($"[TTS] intent-based speak | vol={volume}, pitch={pitch} | text={text}");
+        Debug.Log($"[TTS] Playing new message | vol={volume}, pitch={pitch} | text={text}");
 
         // This triggers Wit TTS via the TTSSpeaker component
         ttsSpeaker.Speak(text);
+    }
+
+    // Optional: Public method to reset the last message (useful for testing or manual resets)
+    public void ResetLastMessage()
+    {
+        lastOllamaMessage = "";
+        Debug.Log("[TTS] Last message cache cleared");
     }
 }
