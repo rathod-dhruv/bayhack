@@ -55,7 +55,6 @@ We built the entire experience in **Unity**, which served as the backbone for mi
 - **Development**: Custom C# systems for breathing animations, path spawning, trigger detection, and audio sequencing
 
 ## Technologies Used
-
 - C#
 - Python
 - EEG/BCI (OpenBCI Cyton)
