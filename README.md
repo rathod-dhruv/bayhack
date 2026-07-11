@@ -1,6 +1,12 @@
 # Stability Coach XR - BayHack
 
-<iframe title="vimeo-player" src="https://player.vimeo.com/video/1137434115?h=1d0765c1f4" width="640" height="360" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen></iframe>
+## Demo Video
+
+[![Stability Coach XR Demo](https://img.shields.io/badge/Watch%20Demo-Vimeo-1ab7ea?style=for-the-badge)](https://vimeo.com/1137434115)
+
+[**Watch the full demo on Vimeo** →](https://vimeo.com/1137434115)
+
+---
 
 ## Overview
 
@@ -98,6 +104,7 @@ The next version will:
 
 - [DevPost Project](https://devpost.com/software/healthcarexr)
 - [BayHack Hackathon](https://www.bayhacksanmateo.com/)
+- [Watch Demo Video](https://vimeo.com/1137434115)
 
 ---
 
